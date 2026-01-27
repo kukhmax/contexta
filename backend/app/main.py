@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.models.schemas import StoryRequest, GeneratedStory, WordForm
+from app.services.generator_rules import RuleBasedGenerator
+from app.services.llm import LLMService
 
 app = FastAPI(
     title="Make Story AI API",
@@ -17,19 +19,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+rule_generator = RuleBasedGenerator()
+llm_service = LLMService()
+
 @app.post("/api/v1/generate", response_model=GeneratedStory)
 async def generate_story(request: StoryRequest):
     """
     Эндпоинт для генерации истории.
-    Пока возвращает Mock-данные для разработки Android клиента.
+    Использует реальную логику (Шаг 1: Правила + Шаг 2: LLM).
     """
+    # 1. Генерируем структуру урока (правила)
+    constraints = rule_generator.generate_structure(request)
+    
+    # 2. Генерируем текст истории (LLM)
+    story_text = await llm_service.generate_story_text(constraints)
+    
+    # 3. (Пока заглушка) NLP + Аудио
+    # В будущем здесь будет Spacy и TTS
+    
+    # Собираем ответ
     return GeneratedStory(
-        title=f"Mock Story about {request.topic}",
-        story_html=f"<p>This is a <b>{request.level}</b> story about {request.topic}. He <mark>went</mark> to the shop.</p>",
+        title=f"{constraints['topic'].title()} Story",
+        story_html=f"<p>{story_text}</p>", # Пока просто текст
         forms=[
-            WordForm(form="went", base="go", tense="past simple", translation="ходил")
+            WordForm(form="mock", base="mock", tense=constraints['grammar'], translation="заглушка")
         ],
-        audio_url="https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav" # Mock audio
+        audio_url=None
     )
 
 @app.get("/")
