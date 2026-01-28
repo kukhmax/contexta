@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.makestoryai.data.model.GeneratedStory
 
@@ -83,15 +84,37 @@ fun StoryView(story: GeneratedStory, onBack: () -> Unit) {
         Text(text = story.title, style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
         
-        // MVP: Just showing raw HTML/text for now. 
-        // In real app we would use AndroidView with WebView or AnnotatedString parsing.
-        Text(text = story.storyHtml) 
+        // Render HTML content
+        AndroidView(
+            modifier = Modifier.fillMaxWidth(),
+            factory = { context ->
+                android.widget.TextView(context).apply {
+                    textSize = 18f
+                    movementMethod = android.text.method.LinkMovementMethod.getInstance()
+                }
+            },
+            update = { textView ->
+                textView.text = androidx.core.text.HtmlCompat.fromHtml(
+                    story.storyHtml,
+                    androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY
+                )
+            }
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
         if (story.audioUrl != null) {
-            Text("Audio available at: ${story.audioUrl}")
-            // ExoPlayer integration comes in Phase 4
+            // Fix URL for emulator if needed (already mostly handled by Retrofit/NetworkModule config for localhost, 
+            // but audio URL from backend might be relative e.g. /static/audio/...)
+            // If backend returns relative path, we prepend base url.
+            // Current backend returns "/static/audio/..."
+            val fullAudioUrl = if (story.audioUrl.startsWith("http")) {
+                story.audioUrl
+            } else {
+                "http://10.0.2.2:8000${story.audioUrl}"
+            }
+            
+            com.makestoryai.ui.components.AudioPlayer(audioUrl = fullAudioUrl)
         }
         
         Spacer(modifier = Modifier.weight(1f))

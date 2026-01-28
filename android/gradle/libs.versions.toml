@@ -34,6 +34,7 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+exoplayer = { group = "com.google.android.exoplayer", name = "exoplayer", version = "2.19.1" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
