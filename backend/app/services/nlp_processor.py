@@ -55,8 +55,8 @@ class NLPService:
         
         for start, end, token in spans_to_highlight:
             if end <= last_start:
-                # Вставляем теги
-                replacement = f"<mark>{text[start:end]}</mark>"
+                # Вставляем теги (Yellow background, bold text)
+                replacement = f"<span style=\"background-color: #FFEB3B; color: black;\"><b>{text[start:end]}</b></span>"
                 final_text[start:end] = list(replacement)
                 last_start = start
                 
