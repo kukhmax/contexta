@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import com.makestoryai.ui.input.InputScreen
 import com.makestoryai.ui.history.HistoryScreen
+import com.makestoryai.ui.premium.PremiumScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -55,6 +57,12 @@ fun MainScreen() {
                         selected = currentScreen == Screen.History,
                         onClick = { currentScreen = Screen.History }
                     )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Star, contentDescription = "Premium") },
+                        label = { Text("Premium") },
+                        selected = currentScreen == Screen.Premium,
+                        onClick = { currentScreen = Screen.Premium }
+                    )
                 }
             }
         }
@@ -71,6 +79,9 @@ fun MainScreen() {
                     Screen.History -> com.makestoryai.ui.history.HistoryScreen(
                         onStoryClick = { story -> selectedStory = story }
                     )
+                    Screen.Premium -> com.makestoryai.ui.premium.PremiumScreen(
+                        onPurchaseSuccess = { /* Celebrate? */ }
+                    )
                 }
             }
         }
@@ -78,7 +89,7 @@ fun MainScreen() {
 }
 
 enum class Screen {
-    Input, History
+    Input, History, Premium
 }
 
 
