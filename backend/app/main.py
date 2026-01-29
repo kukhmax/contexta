@@ -25,37 +25,69 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.services.cache import CacheService
+
+# ... (Previous imports)
+
+app = FastAPI(
+    title="Make Story AI API",
+    version="0.1.0",
+    description="API for Android Language Learning App"
+)
+
+# ... (Mount static & CORS)
+
 rule_generator = RuleBasedGenerator()
 llm_service = LLMService()
 nlp_service = NLPService()
 tts_service = TTSService()
+cache_service = CacheService()
 
 @app.post("/api/v1/generate", response_model=GeneratedStory)
 async def generate_story(request: StoryRequest):
     """
     Полный цикл генерации истории.
+    1. Проверка КЭША (Redis).
+    2. Если нет -> Генерация (Rules -> LLM -> NLP -> TTS).
+    3. Сохранение в КЭШ.
     """
-    # 1. Структура (Rules)
+    # 1. Проверяем кэш
+    cached_story = await cache_service.get_story(request.topic, request.level, request.language)
+    if cached_story:
+        print("⚡ Cache Hit!")
+        return GeneratedStory(**cached_story)
+
+    print("🐢 Cache Miss. Generating...")
+
+    # 2. Структура (Rules)
     constraints = rule_generator.generate_structure(request)
     
-    # 2. Текст (LLM)
+    # 3. Текст (LLM)
     raw_text = await llm_service.generate_story_text(constraints)
     
-    # 3. Обработка (NLP)
+    # 4. Обработка (NLP)
     processed_html, forms = nlp_service.process_story(raw_text, constraints)
     
-    # 4. Аудио (TTS)
-    # Важно: для Android эмулятора нужно возвращать полный URL, 
-    # но пока вернем относительный, клиент может сам подставить base_url
+    # 5. Аудио (TTS)
     audio_path = await tts_service.generate_audio(raw_text, request.language)
     
     # Собираем ответ
-    return GeneratedStory(
+    story_response = GeneratedStory(
         title=f"{constraints['topic'].title()} Story",
         story_html=f"<p>{processed_html}</p>",
         forms=forms,
         audio_url=audio_path
     )
+    
+    # 6. Сохраняем в кэш (преобразуем модель в dict)
+    await cache_service.save_story(
+        request.topic, 
+        request.level, 
+        request.language, 
+        story_response.model_dump()
+    )
+    
+    return story_response
 
 @app.get("/")
 async def root():
